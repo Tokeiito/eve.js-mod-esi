@@ -1,0 +1,9 @@
+{
+  "name": "eve.js-mod-esi",
+  "private": true,
+  "license": "Unlicense",
+  "description": "Source-repo tooling only. The deployable mod is produced by a release step and carries none of this (docs/open-decisions.md, D20). MOD_VERSION in config.js is the single source of truth for the mod's version, so no version field here.",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\""
+  }
+}

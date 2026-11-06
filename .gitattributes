@@ -1,0 +1,5 @@
+# Everything is LF in the repository.
+* text=auto eol=lf
+
+# cmd.exe misparses a batch file with LF-only line endings.
+*.bat text eol=crlf

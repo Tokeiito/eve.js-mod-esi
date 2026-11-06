@@ -1,0 +1,210 @@
+{
+  "note": "Provenance for the recorded ESI response bodies beside this file, one entry per <operationId>.json. Public, unauthenticated endpoints only — nothing under contract/ is anyone's character data. Record with `curl -sD - <url> -o contract/golden/<operationId>.json` and no X-Compatibility-Date header, which is what makes it the 2020-01-01 surface (D4). `producer` is read off the recorded response's content-type — bare application/json is `gateway`, application/json; charset=UTF-8 is `app` — and it decides whether the body ends with a newline. contract/golden.js refuses a file that has no entry here, and refuses one whose last byte disagrees with its producer. Each entry declares how the recording is used: \"bytes\" is an assertGolden diff of the whole body, \"shape\" is a recording whose values this replica cannot reproduce, standing on the field set, the key order and the last byte instead. \"exempt\" lists operations that deliberately have no recording, with the reason — an operation that is in neither is a golden somebody forgot.",
+  "goldens": {
+    "GetStatus": {
+      "method": "GET",
+      "path": "/status/",
+      "url": "https://esi.evetech.net/latest/status/",
+      "recordedAt": "2026-08-22",
+      "producer": "gateway",
+      "note": "93 bytes, of which 92 are JSON: the Go gateway ends the body with a newline. The first golden recorded, and the reason #10 was re-opened — a replica that omits that byte is off by one in content-length on every gateway route. Values are a moment in time; #38's own test supplies the game state that reproduces them.",
+      "diff": "bytes"
+    },
+    "GetMarketsRegionIdOrders": {
+      "method": "GET",
+      "path": "/markets/10000001/orders/",
+      "url": "https://esi.evetech.net/latest/markets/10000001/orders/?order_type=all&page=1&type_id=12005",
+      "recordedAt": "2026-08-23",
+      "producer": "app",
+      "note": "Derelik, one type, six orders — three buy and three sell, which is every branch of the mapping in 1413 bytes. Recorded narrow on purpose: The Forge's page 1 is 237 KB and the whole prices body is 1.1 MB, larger than the pinned spec, and none of that extra weight proves anything this does not. All twelve required fields, alphabetical as CCP's serializer emits them, charset=UTF-8 and no trailing newline. Like GetMetaCompatibilityDates this cannot be an assertGolden diff — a private server's order book is not CCP's — so test/marketsContract.test.js stands on the field set and the last byte, not the values. GetMarketsPrices has NO recording, and says so in \"exempt\" below rather than leaning on this entry to cover markets.js — which is what it used to do, through a substring match, and is what #60 closed.",
+      "diff": "shape"
+    },
+    "GetMetaCompatibilityDates": {
+      "method": "GET",
+      "path": "/meta/compatibility-dates",
+      "url": "https://esi.evetech.net/meta/compatibility-dates",
+      "recordedAt": "2026-08-23",
+      "producer": "meta",
+      "note": "The third producer's bytes: bare application/json and a trailing newline like the gateway's, 208 for 207 of JSON. Recorded to prove the shape rather than the values — CCP lists fourteen dates and this replica serves one (D4), so routes/meta.js deliberately does not satisfy assertGolden, and test/metaContract.test.js says which parts of the recording it does stand on: the key name, the item spelling, and the last byte.",
+      "diff": "shape"
+    },
+    "GetUniverseRegionsRegionId": {
+      "method": "GET",
+      "path": "/universe/regions/10000002/",
+      "url": "https://esi.evetech.net/latest/universe/regions/10000002/",
+      "recordedAt": "2026-08-22",
+      "producer": "app",
+      "note": "The Forge. Recorded as the counterpart to GetStatus: same surface, different implementation, so 270 bytes with no trailing newline and a charset parameter on the content-type. Between them the two goldens prove both rows of lib/serialize.js PRODUCER_WIRE against real bytes.",
+      "diff": "bytes"
+    },
+    "GetCharactersCharacterId": {
+      "method": "GET",
+      "path": "/characters/3004069/",
+      "url": "https://esi.evetech.net/latest/characters/3004069/",
+      "recordedAt": "2026-08-25",
+      "producer": "gateway",
+      "note": "An NPC agent, and the choice of entity is the whole of why this file is admissible. This directory takes public bodies only and holds nobody's character data (D23), and a public character lookup is character data on its face — so the recording is of an agent out of CCP's own static-data dump, present identically in every EVE install including this repository's, rather than of a player. 172 bytes, of which 171 are JSON: the gateway's trailing newline, bare application/json, and the raw UTF-8 of a producer that does not escape (contract/wire.js NON_ASCII_ESCAPING). What it is here to prove is the field order, which is the thing about this operation nobody would guess: the six required fields alphabetically and then the optionals in an order that is not alphabetical. It also carries security_status as 0.0 rather than 0, which is DOUBLE_RENDERING in three bytes. Values are a real agent's and this replica answers for player characters, so the diff stands on the field set, the key order and the last byte.",
+      "diff": "shape"
+    },
+    "GetCorporationsCorporationId": {
+      "method": "GET",
+      "path": "/corporations/1000035/",
+      "url": "https://esi.evetech.net/latest/corporations/1000035/",
+      "recordedAt": "2026-08-25",
+      "producer": "gateway",
+      "note": "An NPC corporation, for the same admissibility reason as GetCharactersCharacterId beside it: no player owns it and its CEO is an agent, so nothing here names a person. 675 bytes with the gateway's trailing newline. The recording exists for the field order, which is the third distinct order among #41's three entity lookups and the one furthest from the pinned spec's alphabetical keys — name and ticker lead, the free-text fields follow, the ids come after them. It also carries tax_rate as 0.000, the one field on this surface CCP quantises to a fixed scale (contract/wire.js DOUBLE_RENDERING.fixed); a replica writing 0 is four bytes short. alliance_id, date_founded and faction_id are absent from this body — an NPC corporation is in no alliance — and their positions were settled by two further probes recorded in contract/wire.js PUBLIC_ENTITY.fieldOrder rather than by a second file here naming a player corporation.",
+      "diff": "shape"
+    },
+    "GetUniverseFactions": {
+      "method": "GET",
+      "path": "/universe/factions/",
+      "url": "https://esi.evetech.net/latest/universe/factions/",
+      "recordedAt": "2026-08-25",
+      "producer": "app",
+      "note": "27 factions, 22,171 bytes, no trailing newline. The most useful recording in this directory, because it is the one body this replica reproduces field for field: built from this install's own SDE-derived tables it matches CCP's 27 rows on all ten fields each, including station_count and station_system_count, which appear on no faction record anywhere and are derived by grouping the stations table through corporations to factions. With the escaping fix that body is 22,171 bytes against this file's 22,171. The diff is nevertheless shape and not bytes, for one reason: CCP's row order is not sorted by faction_id (it arrives 500003, 500010, 500017, 500024, 500004, ...), nothing in the data derives it, and this replica sorts ascending. Order is bytes, so that is a real difference and the only one. This file is also what found NON_ASCII_ESCAPING: it matched field for field and differed by six bytes, all of it two en dashes in one description.",
+      "diff": "shape"
+    },
+    "GetUniverseSystemsSystemId": {
+      "method": "GET",
+      "path": "/universe/systems/30000142/",
+      "url": "https://esi.evetech.net/latest/universe/systems/30000142/",
+      "recordedAt": "2026-08-25",
+      "producer": "app",
+      "note": "Jita, 1024 bytes, no trailing newline. Every branch of the mapping in one body: eight planets of which two have no moons and none has a belt, seven stargates, eighteen stations, and a star. Built from this install's own SDE-derived tables it matches CCP's body field for field and byte for byte except one field's digits — security_status, where CCP sends 0.9459131360054016 and mapSolarSystems.jsonl publishes 0.945913, a six-decimal rounding of a float32 that Math.fround does not recover (it gives 0.9459130167961121). That is why the diff is shape rather than bytes; test/universeContract.test.js stands on the field set, the key order, a planet object's own key order, every other field's value, and the last byte, and asserts the two bodies are identical once that one value's digits are removed from both. Also the recording that fixes what an empty collection looks like on these routes: Jita has no asteroid belts and carries no asteroid_belts key on any planet.",
+      "diff": "shape"
+    },
+    "GetUniverseStarsStarId": {
+      "method": "GET",
+      "path": "/universe/stars/40009076/",
+      "url": "https://esi.evetech.net/latest/universe/stars/40009076/",
+      "recordedAt": "2026-08-25",
+      "producer": "app",
+      "note": "Jita's star, 174 bytes, no trailing newline, and the first golden in this directory whose values a private server reproduces exactly rather than approximately: the static universe is CCP's dump, and this install has it. An assertGolden diff of the whole body, from two transcribed rows — mapStars.jsonl's statistics and the store's celestial for the same object. What it pins that nothing else could: age is seconds in the dump and years on the wire over a 365.25-day year, truncated; temperature and radius are int64 on the wire and fractional in the dump; luminosity is 1.692 in the dump and 1.6920000314712524 on the wire, because the dump prints the shortest decimal that round-trips CCP's float32 and reading it back as one recovers the exact value. Every one of those four rules is a byte in this file.",
+      "diff": "bytes"
+    },
+    "GetUniverseConstellationsConstellationId": {
+      "method": "GET",
+      "path": "/universe/constellations/20000020/",
+      "url": "https://esi.evetech.net/latest/universe/constellations/20000020/",
+      "recordedAt": "2026-08-25",
+      "producer": "app",
+      "note": "Kimotoro, 231 bytes, no trailing newline. The second reproducible-by-value recording, and the one that settles how the application writes a double: its three position coordinates are integral and CCP writes them as -134996400468185440.0, which is the shortest round-trip form plus .0 and NOT the exact binary expansion — (64999452632293264).toFixed(1) disagrees with this file in the last two digits of y. lib/serialize.js double() renders the former for exactly that reason and this is the proof. Constellations are also the endpoint the gameStore cannot answer at all: it has no constellations table and its only constellation names sit on station rows, so every constellation with no station in it has no name anywhere in the store. D42 is why this replica reads the extracted dump for it rather than answering without a name.",
+      "diff": "bytes"
+    },
+    "GetUniverseStationsStationId": {
+      "method": "GET",
+      "path": "/universe/stations/60003760/",
+      "url": "https://esi.evetech.net/latest/universe/stations/60003760/",
+      "recordedAt": "2026-08-25",
+      "producer": "app",
+      "note": "Jita 4-4, 582 bytes, no trailing newline. Fifteen service strings, and they are the reason this recording matters: the dump lists operation 14's services as [1,3,5,7,13,14,17,19,21,22,23,25,26,27,10] and this body puts cloning — service 10 — fifth rather than last, which is how ascending-by-service-id was established rather than assumed. It also carries four integral doubles and one that is not, so it is DOUBLE_RENDERING on a body with both. Shape rather than bytes for one field: office_rental_cost is 8675313605.0 here and a static 10000 in every private server's store, because office rent moves on Tranquility. Everything else — name, type_id, position, race_id, owner, both reprocessing rates, max_dockable_ship_volume and all fifteen services in order — this replica reproduces.",
+      "diff": "shape"
+    }
+  },
+  "exempt": {
+    "GetMarketsPrices": {
+      "reason": "Its only form is the whole body: 15,817 type rows, 1.1 MB, larger than the pinned spec itself. Nothing about the application producer that GetMarketsRegionIdOrders does not already prove in 1413 bytes, and no narrower form exists to record — the endpoint takes no parameters. test/marketsContract.test.js asserts its shape against the pinned spec instead.",
+      "since": "2026-08-24"
+    },
+    "GetCharactersCharacterIdOnline": {
+      "reason": "An authenticated read of one pilot, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the spec and a hand-written field list, never against a recording of somebody's character. Observed 2026-08-25 at https://esi.evetech.net/latest/characters/{character_id}/online/ by `node scripts/observe-403.js --client-id <id> --scope \"esi-location.read_online.v1 esi-location.read_location.v1 esi-location.read_ship_type.v1\" --success`, and that observation lives in contract/wire.js CHARACTER_LOCATION as protocol constants with their date, which is where D23 puts it: hand-written constants, never a corpus of recorded responses. A file here would also be one no handler can ever satisfy — CHARACTER_LOCATION.unavailableFromGame records that eve.js persists neither last_login nor logins, so this replica answers with two of CCP's four fields — and neither diff kind describes that. \"bytes\" would fail forever, and \"shape\" claims only the values differ when the field set does too. A divergence belongs where it is argued, not in a file whose whole point is that nobody touched it.",
+      "since": "2026-08-25"
+    },
+    "GetCharactersCharacterIdLocation": {
+      "reason": "Same rule and same run: https://esi.evetech.net/latest/characters/{character_id}/location/, observed 2026-08-25 by `node scripts/observe-403.js --client-id <id> --scope \"esi-location.read_online.v1 esi-location.read_location.v1 esi-location.read_ship_type.v1\" --success`. Those 50 bytes are where one pilot was docked, which is character data whatever else is true of them. Unlike GetCharactersCharacterIdOnline this replica CAN reproduce the body field for field, and that decides diff kind rather than admissibility — the reason there is no file is whose data it is, not whether we could match it, and a golden recorded because it happened to be reproducible would put the first character body in a directory that promises it holds none. The field order, the omission of structure_id rather than a null, and the observed content-length are in contract/wire.js CHARACTER_LOCATION (D23).",
+      "since": "2026-08-25"
+    },
+    "GetCharactersCharacterIdShip": {
+      "reason": "Same rule and same run: https://esi.evetech.net/latest/characters/{character_id}/ship/, observed 2026-08-25 by `node scripts/observe-403.js --client-id <id> --scope \"esi-location.read_online.v1 esi-location.read_location.v1 esi-location.read_ship_type.v1\" --success`. Reproducible field for field like GetCharactersCharacterIdLocation, and exempt for the identical reason: the body names a pilot's ship and what they called it, which is the plainest character data on the surface #48 adds. Recorded as constants in contract/wire.js CHARACTER_LOCATION — alphabetical field order, 72 bytes, no trailing newline — and asserted against the pinned spec rather than against a saved copy of somebody's fitting.",
+      "since": "2026-08-25"
+    },
+    "GetCharactersCharacterIdRoles": {
+      "reason": "An authenticated read, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the pinned spec and a hand-written field list, never against a recording of somebody's data. Observed 2026-08-25 by `node scripts/observe-authed.js --client-id <id>`, and that observation lives in contract/wire.js CHARACTER_ROLES as protocol constants with their date, which is where D23 puts it. A recording would also be one no handler can satisfy: the role vocabulary is a mapping of eve.js's 64-bit corporation mask onto CCP's enum, and routes/roles.js UNMAPPED_ROLE_BITS records nine bits this replica deliberately never emits. \"bytes\" would fail forever and \"shape\" would claim only the values differ when the set does too.",
+      "since": "2026-08-25"
+    },
+    "GetCharactersCharacterIdSkills": {
+      "reason": "Exempt twice over, and the first reason is the weaker one. It is an authenticated read, and this directory takes public, unauthenticated bodies only, and a recording would be one pilot's entire training history, which is character data on its face. The second reason is that there is nothing to record: this operation was not in the 2026-08-25 runs and has never been observed, so unlike the routes above it there is no capture to keep out and no contract/wire.js CHARACTER_SKILLS record citing one. What is unobserved is therefore argued in routes/skills.js rather than recorded anywhere: the field order at both levels, the row order of skills[], and whether CCP sends a zero unallocated_sp or omits it. Neither diff kind would describe a file here either: this replica cannot reproduce the body field for field, because eve.js applies its expert-system overlay inside the skillState read that writes, and lib/runtimeAccess.js listCharacterSkills deliberately does not make that call, so active_skill_level is the persisted level rather than the boosted one.",
+      "since": "2026-09-10"
+    },
+    "GetCorporationsCorporationIdStructures": {
+      "reason": "An authenticated read, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the pinned spec and a hand-written field list, never against a recording of somebody's data. Its success has never been observed at all: three capture runs on three characters each hit contract/wire.js REQUIRED_ROLE_REFUSAL, because none held Station_Manager or Director. So there is no recording to make, and the body routes/structures.js projects is built from the pinned spec under D23's first clause — the spec is authoritative for the body's possibility space — with each unobserved wire fact named in that file beside the curl that would settle it. A golden file would record a body nobody has seen.",
+      "since": "2026-08-25"
+    },
+    "GetCharactersCharacterIdFleet": {
+      "reason": "An authenticated read, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the pinned spec and a hand-written field list, never against a recording of somebody's data. The interesting half of this endpoint is its 404: contract/wire.js FLEET_ABSENT holds `{\"error\":\"Character is not in a fleet\"}` at 39 bytes, observed three times on 2026-08-25, and eve-nexum reads it as the normal \"not in a fleet\" answer rather than as an error. That is a refusal and belongs in wire.js, not here. The 200 was never captured — no available character was in a fleet — so there is likewise no body to record.",
+      "since": "2026-08-25"
+    },
+    "GetUniverseStructuresStructureId": {
+      "reason": "An authenticated read, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the pinned spec and a hand-written field list, never against a recording of somebody's data. Its success has never been captured — three runs on three characters all hit contract/wire.js REQUIRED_ROLE_REFUSAL before a structure id could be resolved — so the body routes/structures.js projects comes from the pinned spec under D23's first clause. There is no recording to make and a golden file would record a body nobody has seen.",
+      "since": "2026-08-25"
+    },
+    "GetFleetsFleetIdMembers": {
+      "reason": "An authenticated read, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the pinned spec and a hand-written field list, never against a recording of somebody's data. No available character was in a fleet across three capture runs, so the roster body is spec-derived under D23's first clause. It is also a body that names where other pilots are sitting and in what, which is the clearest case in this repository for why authenticated responses are not recorded here.",
+      "since": "2026-08-25"
+    },
+    "GetCharactersCharacterIdContacts": {
+      "reason": "An authenticated read, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the pinned spec and a hand-written field list, never against a recording of somebody's data. A recording here would be one pilot's standings list — who they trust and who they have blocked — which is character data on its face. Observed 2026-08-25 by `node scripts/observe-authed.js --client-id <id>`, and that observation lives in contract/wire.js CONTACTS as protocol constants with their date, which is where D23 puts it: alphabetical field order, is_watched omitted rather than sent as false, label_ids on no row at all. This replica also cannot reproduce a body field for field — routes/contacts.js drops a contact whose id the game cannot name, because contact_type is a closed four-value enum — so neither diff kind describes it: \"bytes\" would fail forever and \"shape\" claims only the values differ when the row set can too.",
+      "since": "2026-08-25"
+    },
+    "GetCorporationsCorporationIdContacts": {
+      "reason": "An authenticated read, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the pinned spec and a hand-written field list, never against a recording of somebody's data. Same rule and same run. The interesting half of this endpoint is its refusal: contract/wire.js CROSS_ENTITY_REFUSAL holds `{\"error\":\"Character is not in the corporation\"}` at 47 bytes, observed against an NPC corporation so the probe named no player's corporation, and that is a refusal and belongs in wire.js rather than here. The success body is a corporation's standings — who it is blue to — which is exactly the sort of thing a private server's members would not expect to find in a public repository. It is also the one bucket whose page size was measured: 200 rows with X-Pages: 2, recorded in CONTACTS.pageSize.",
+      "since": "2026-08-25"
+    },
+    "GetAlliancesAllianceIdContacts": {
+      "reason": "An authenticated read, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the pinned spec and a hand-written field list, never against a recording of somebody's data. Same rule and same run. An alliance's standings are its diplomatic posture, and a recording of one names every entity it is blue or red to. Its page size was not settled either — 240 rows on X-Pages: 1 bounds it from below and fixes nothing — so routes/contacts.js declares UNOBSERVED_PAGE_SIZE and says so, and contract/wire.js CONTACTS.pageSize carries the null rather than a number nobody measured.",
+      "since": "2026-08-25"
+    },
+    "PostUiAutopilotWaypoint": {
+      "reason": "There is no body to record. The pinned spec declares 204 and `default` on POST /ui/autopilot/waypoint and no numeric error status at all, so a success on this operation is a status line and headers — every other entry in this directory exists because a body's bytes decide something (a trailing newline, a charset, a field order) and this one has none of those to decide. It is also a write: recording it would mean setting a real pilot's autopilot route against Tranquility, which scripts/observe-authed.js puts behind --write and off by default for the same reason. What the 204 carries on the wire is unobserved and is recorded nowhere else either; routes/ui.js says so and says which one request settles it. D34 is where the semantics are argued.",
+      "since": "2026-08-25"
+    },
+    "GetAlliancesAllianceId": {
+      "reason": "Every alliance on Tranquility is player-made. There is no NPC alliance to record the way GetCharactersCharacterId and GetCorporationsCorporationId use an NPC agent and an NPC corporation, so any file here would carry a real alliance's name and ticker together with the character id of the pilot who founded it and the corporation id that executes it — four identifiers naming real people's assets, in a directory whose whole promise is that it holds none. The endpoint was observed (2026-08-25, https://esi.evetech.net/latest/alliances/{alliance_id}/) and what the observation established is recorded as protocol constants in contract/wire.js PUBLIC_ENTITY: the gateway producer, the trailing newline, and the field order — which is plain alphabetical, and is the only one of the three entity lookups that is, so it is worth having written down precisely because it is the case a reader would assume held for all three. No content-length is recorded either, and that is the same rule rather than an oversight: a body whose length depends on what somebody named their alliance is not a protocol constant.",
+      "since": "2026-08-25"
+    },
+    "PostUniverseNames": {
+      "reason": "A POST whose body is a function of the request, so there is no canonical response to record: what comes back depends entirely on which ids (or names) were asked about, and a file here would be a recording of one arbitrary request rather than of the endpoint. The values are also not reproducible in the direction that matters most — a private server's characters, corporations and alliances are its own, so a recorded body would diff against this replica forever on the three categories eve.js allocates, while agreeing on the static ones for reasons that say nothing about the projection. What the recording would have proved is proved elsewhere and more tightly: contract/wire.js SUCCESS_KIND has carried this operation as APP_SUCCESS since the 2026-08-22 survey, so the content type, the absent trailing newline and the error family are recorded facts; and test/namesContract.test.js asserts the body's field set, its key order and its enums against the pinned 2020-01-01 document rather than against a copy of it, which is what D23 asks for where the spec is the authority.",
+      "since": "2026-09-16"
+    },
+    "PostUniverseIds": {
+      "reason": "A POST whose body is a function of the request, so there is no canonical response to record: what comes back depends entirely on which ids (or names) were asked about, and a file here would be a recording of one arbitrary request rather than of the endpoint. The values are also not reproducible in the direction that matters most — a private server's characters, corporations and alliances are its own, so a recorded body would diff against this replica forever on the three categories eve.js allocates, while agreeing on the static ones for reasons that say nothing about the projection. What the recording would have proved is proved elsewhere and more tightly: contract/wire.js SUCCESS_KIND has carried this operation as APP_SUCCESS since the 2026-08-22 survey, so the content type, the absent trailing newline and the error family are recorded facts; and test/namesContract.test.js asserts the body's field set, its key order and its enums against the pinned 2020-01-01 document rather than against a copy of it, which is what D23 asks for where the spec is the authority.",
+      "since": "2026-09-16"
+    },
+    "GetCharactersCharacterIdAssets": {
+      "reason": "An authenticated read of one owner's property, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the spec and a hand-written field list, never against a recording of somebody's character. There is also nothing a recording could settle that the document does not: every field of this operation is declared in the pinned 2020-01-01 schema, including the closed location_flag enum, and contract/wire.js already carries the producer-level facts (content type, absent trailing newline, error family) that a scoped JSON route inherits by construction — lib/router.js assertScope refuses to compile one any other way. Two divergences are argued in routes/assets.js and asserted in test/locationFlags.test.js rather than recorded here: a pilot's implants and skills cannot appear, because eve.js keeps implants on the character record and skills in their own table, so neither is an items row with a flagID.",
+      "since": "2026-09-16"
+    },
+    "GetCharactersCharacterIdBlueprints": {
+      "reason": "An authenticated read of one owner's property, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the spec and a hand-written field list, never against a recording of somebody's character. There is also nothing a recording could settle that the document does not: every field of this operation is declared in the pinned 2020-01-01 schema, including the closed location_flag enum, and contract/wire.js already carries the producer-level facts (content type, absent trailing newline, error family) that a scoped JSON route inherits by construction — lib/router.js assertScope refuses to compile one any other way. One divergence is argued in routes/blueprints.js: a stack of unresearched originals bought off the market is listed here, where eve.js's own blueprint window omits it, because CCP's description of quantity says that stack is a row. A recording of CCP's body would not show that difference, since it is a difference in which rows exist on a private server rather than in how a row is shaped.",
+      "since": "2026-09-16"
+    },
+    "GetCharactersCharacterIdIndustryJobs": {
+      "reason": "An authenticated read of one owner's property, and this directory takes public, unauthenticated bodies only — contract/golden.js says an authenticated endpoint's fidelity is proved against the spec and a hand-written field list, never against a recording of somebody's character. There is also nothing a recording could settle that the document does not: every field of this operation is declared in the pinned 2020-01-01 schema, including the closed location_flag enum, and contract/wire.js already carries the producer-level facts (content type, absent trailing newline, error family) that a scoped JSON route inherits by construction — lib/router.js assertScope refuses to compile one any other way. One divergence is argued in routes/industry.js: CCP's include_completed is documented as returning the past 90 days and this replica returns every finished job, because eve.js's industryJobs table has no retention policy and nothing prunes a delivered row. A recording could not express that either, being a window on CCP's data rather than a property of the body.",
+      "since": "2026-09-16"
+    },
+    "GetCorporationsCorporationIdAssets": {
+      "reason": "The corporation twin of an operation already exempted here, and exempt for the same reason with one more on top: this directory takes public, unauthenticated bodies only, and this body is a corporation's property behind a role gate. What a recording would have settled is settled by the document — every field, and the x-required-roles the gate is built from, are declared in the pinned 2020-01-01 spec and asserted against it by test/corporationAssetsContract.test.js rather than against a copy. The refusals are the half that is observed: contract/wire.js REQUIRED_ROLE_REFUSAL holds the 403's bytes, including CCP's 40-character \"required role(s)\" wording, captured on /corporations/{id}/structures during the 2026-08-25 run.",
+      "since": "2026-09-16"
+    },
+    "GetCorporationsCorporationIdBlueprints": {
+      "reason": "The corporation twin of an operation already exempted here, and exempt for the same reason with one more on top: this directory takes public, unauthenticated bodies only, and this body is a corporation's property behind a role gate. What a recording would have settled is settled by the document — every field, and the x-required-roles the gate is built from, are declared in the pinned 2020-01-01 spec and asserted against it by test/corporationAssetsContract.test.js rather than against a copy. The refusals are the half that is observed: contract/wire.js REQUIRED_ROLE_REFUSAL holds the 403's bytes, including CCP's 40-character \"required role(s)\" wording, captured on /corporations/{id}/structures during the 2026-08-25 run.",
+      "since": "2026-09-16"
+    },
+    "GetCorporationsCorporationIdIndustryJobs": {
+      "reason": "The corporation twin of an operation already exempted here, and exempt for the same reason with one more on top: this directory takes public, unauthenticated bodies only, and this body is a corporation's property behind a role gate. What a recording would have settled is settled by the document — every field, and the x-required-roles the gate is built from, are declared in the pinned 2020-01-01 spec and asserted against it by test/corporationAssetsContract.test.js rather than against a copy. The refusals are the half that is observed: contract/wire.js REQUIRED_ROLE_REFUSAL holds the 403's bytes, including CCP's 40-character \"required role(s)\" wording, captured on /corporations/{id}/structures during the 2026-08-25 run.",
+      "since": "2026-09-16"
+    },
+    "GetCharactersCharacterIdOrders": {
+      "reason": "An authenticated read of one pilot's own market orders, and this directory takes public, unauthenticated bodies only. There is also nothing a recording could settle that the document does not: every field is declared in the pinned 2020-01-01 schema, and the one open question about this body is behavioural rather than structural -- whether CCP omits escrow, is_buy_order and min_volume on a sell order, all three being optional. routes/orders.js states the choice taken (send them, because they are real columns with stored values) and names the single request that would settle it.",
+      "since": "2026-09-16"
+    },
+    "GetMarketsStructuresStructureId": {
+      "reason": "Scoped, so not a public body, and its values are a private server's own order book rather than CCP's. The structural contract is asserted against the pinned document by test/ordersContract.test.js, including the two fields this body declares required that the character order body declares optional. What a recording would not capture is the divergence that actually matters here and which routes/orders.js states: this replica's ACL is structure ownership where CCP's is market access, so the set of callers who get a 200 differs even though the body does not.",
+      "since": "2026-09-16"
+    },
+    "GetIndustrySystems": {
+      "reason": "Public, and the one operation on this surface where a recording of CCP's body would be actively misleading to keep. Tranquility publishes a different cost index per system per activity, derived from telemetry eve.js does not collect: services/industry/industrySystemCostIndex.js calls itself an \"Option A static approximation\" and its resolveSystemCostIndex ignores both arguments, returning one configured number for the whole cluster. So every value in this replica's body differs from CCP's by construction and always will, and a byte diff would fail forever while a shape diff would claim only the values differ when the set of systems does too. The divergence is argued in routes/industry.js and the field set, key order and activity enum are asserted against the pinned document by test/ordersContract.test.js.",
+      "since": "2026-09-16"
+    }
+  }
+}

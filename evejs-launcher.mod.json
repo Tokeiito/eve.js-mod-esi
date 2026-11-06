@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 3,
+  "id": "esiApi",
+  "displayName": "ESI and SSO Replica",
+  "version": "1.0.0",
+  "description": "Serves a replica of CCP's ESI API and SSO login from your own server, so third-party EVE tools can read this server's data. ESI listens on port 26005 and SSO on 26006, on this machine only until you change the listen addresses. Settings saved here are overridden by the same setting in the mod's .env.txt or .env file, if you made one, and by real environment variables. Docker users: the launcher does not publish these ports, see the README.",
+  "kind": "loader",
+  "supportedBackends": ["native", "docker"],
+  "activation": {"strategy": "loader_rename"},
+  "restart": "game_server",
+  "updates": {
+    "provider": "github",
+    "repository": "Tokeiito/eve.js-mod-esi",
+    "asset": "EveJS-ESI-{version}.zip",
+    "channel": "stable",
+    "tagPrefix": "v",
+    "preserveFiles": [".env.txt"]
+  },
+  "settings": {
+    "schemaVersion": 1,
+    "files": [
+      {"id": "settings", "base": "mod", "path": "settings.json", "format": "json"}
+    ],
+    "fields": [
+      {
+        "id": "esiPort",
+        "label": "ESI port",
+        "description": "The port tools use to read ESI. 0 turns the ESI listener off. Must differ from the SSO port. Cannot be 443, 5222, 26000, 26001, 26002, 26003, 26400, 40110 or 40111, which eve.js itself uses. Default: 26005.",
+        "group": "ESI listener",
+        "type": "integer",
+        "default": 26005,
+        "minimum": 0,
+        "maximum": 65535,
+        "step": 1,
+        "restart": "game_server",
+        "file": "settings",
+        "key": ["esiPort"]
+      },
+      {
+        "id": "esiBindHost",
+        "label": "ESI listen address",
+        "description": "Which network address the ESI listener accepts connections on. 127.0.0.1 means this machine only. Anything else exposes live game data over plain HTTP, and the server console warns about it. Under Docker this must be 0.0.0.0, or the published port answers connection refused. Blank means 127.0.0.1. Default: 127.0.0.1.",
+        "group": "ESI listener",
+        "type": "string",
+        "default": "127.0.0.1",
+        "maxLength": 253,
+        "restart": "game_server",
+        "file": "settings",
+        "key": ["esiBindHost"]
+      },
+      {
+        "id": "ssoIssuer",
+        "label": "SSO address (issuer)",
+        "description": "The address tools sign in at, and the name written into every token. It needs http:// or https://, a host and a port, with no path and no trailing slash, and tools must be able to reach it exactly as written. Changing it invalidates every token already issued, so every tool has to sign in again. Blank turns the SSO listener off. Default: http://localhost:26006.",
+        "group": "SSO listener",
+        "type": "string",
+        "default": "http://localhost:26006",
+        "maxLength": 2048,
+        "restart": "game_server",
+        "file": "settings",
+        "key": ["ssoIssuer"]
+      },
+      {
+        "id": "ssoPort",
+        "label": "SSO port",
+        "description": "The port the SSO listener binds. Keep it matching the port in the SSO address above, because tools fetch that address. Must differ from the ESI port. Cannot be 443, 5222, 26000, 26001, 26002, 26003, 26400, 40110 or 40111, which eve.js itself uses. Default: 26006.",
+        "group": "SSO listener",
+        "type": "integer",
+        "default": 26006,
+        "minimum": 1,
+        "maximum": 65535,
+        "step": 1,
+        "restart": "game_server",
+        "file": "settings",
+        "key": ["ssoPort"]
+      },
+      {
+        "id": "ssoBindHost",
+        "label": "SSO listen address",
+        "description": "Which network address the SSO listener accepts connections on. 127.0.0.1 means this machine only. Under Docker this must be 0.0.0.0, or the published port answers connection refused. Blank means 127.0.0.1. Default: 127.0.0.1.",
+        "group": "SSO listener",
+        "type": "string",
+        "default": "127.0.0.1",
+        "maxLength": 253,
+        "restart": "game_server",
+        "file": "settings",
+        "key": ["ssoBindHost"]
+      },
+      {
+        "id": "ssoClientsPath",
+        "label": "Allowed clients file",
+        "description": "Full path, as the server process sees it, to a JSON file listing tools that may sign in from an address other than this machine, or that use a client secret. Under Docker that is a path such as /app/mods/esiApi-sso-clients.json. Keep the file outside this mod's folder. A path that cannot be read stops the whole mod. Blank means no list: tools redirecting to a loopback address still work. Default: blank.",
+        "group": "SSO listener",
+        "advanced": true,
+        "type": "string",
+        "default": "",
+        "restart": "game_server",
+        "file": "settings",
+        "key": ["ssoClientsPath"]
+      },
+      {
+        "id": "errorLimitMaxErrors",
+        "label": "Error budget per minute",
+        "description": "How many error responses a tool may receive in 60 seconds before this replica answers 420, as CCP does. 100 matches CCP. Raise it only for a tool that asks about many unknown things during startup. Default: 100.",
+        "group": "Tuning",
+        "advanced": true,
+        "type": "integer",
+        "default": 100,
+        "minimum": 1,
+        "maximum": 1000000,
+        "step": 100,
+        "restart": "game_server",
+        "file": "settings",
+        "key": ["errorLimitMaxErrors"]
+      },
+      {
+        "id": "logLevel",
+        "label": "Log detail",
+        "description": "How much this mod prints to the server console. Debug is noisy. Default: Info.",
+        "group": "Tuning",
+        "advanced": true,
+        "type": "choice",
+        "default": "info",
+        "choices": [
+          {"value": "error", "label": "Errors"},
+          {"value": "warn", "label": "Warnings"},
+          {"value": "info", "label": "Info"},
+          {"value": "debug", "label": "Debug"}
+        ],
+        "restart": "game_server",
+        "file": "settings",
+        "key": ["logLevel"]
+      }
+    ]
+  }
+}

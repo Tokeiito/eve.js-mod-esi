@@ -1,0 +1,44 @@
+# Builds the launcher package for a version tag and attaches both assets to a
+# GitHub release. The launcher's updater reads them from there.
+
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - run: npm test
+
+      - name: The tag must be v + MOD_VERSION
+        run: |
+          expected="v$(node -p "require('./config').MOD_VERSION")"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match $expected from config.js." >&2
+            exit 1
+          fi
+
+      - run: node scripts/build-release.js
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            dist/EveJS-ESI-*.zip \
+            dist/EveJS-ESI-*.update.json

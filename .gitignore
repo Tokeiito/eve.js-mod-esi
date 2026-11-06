@@ -1,0 +1,22 @@
+# The mod's own configuration. .env.example is the committed template.
+.env
+.env.*
+!.env.example
+
+# Written by the launcher form on the deployment side.
+settings.json
+
+node_modules/
+
+# Release assets from scripts/build-release.js.
+dist/
+
+# Local agent configuration.
+CLAUDE.md
+AGENTS.md
+.claude/
+
+# Scratch trees created with mkdtemp under test/. A killed run can leave them behind.
+test/health-*/
+test/sourceHash-*/
+test/deployDrift-*/
